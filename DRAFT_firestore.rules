@@ -1,0 +1,301 @@
+rules_version = '2';
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // 1. Global Safety Net (Default-Deny Catch-All)
+    match /{document=**} {
+      allow read, write: if false;
+    }
+
+    // Global Primitives & Helpers
+    function isSignedIn() {
+      return request.auth != null;
+    }
+
+    function isVerifiedUser() {
+      return isSignedIn() && request.auth.token.email_verified == true;
+    }
+
+    function incoming() {
+      return request.resource.data;
+    }
+
+    function existing() {
+      return resource.data;
+    }
+
+    function isValidId(id) {
+      return id is string && id.size() >= 1 && id.size() <= 128 && id.matches('^[a-zA-Z0-9_\\-]+$');
+    }
+
+    function isValidTickerSlotId(slotId) {
+      return slotId is string && slotId.size() == 6 && slotId.matches('^slot_[1-7]$');
+    }
+
+    function isBootstrappedAdmin() {
+      return isVerifiedUser() && request.auth.token.email == 'h500341791@gmail.com';
+    }
+
+    function isAdmin() {
+      return isBootstrappedAdmin() || (
+        isVerifiedUser() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin'
+      );
+    }
+
+    function canPublishTicker() {
+      return isBootstrappedAdmin() || (
+        isVerifiedUser() &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid)) &&
+        get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role in ['vip', 'moderator', 'admin']
+      );
+    }
+
+    // Validation Blueprints
+    function isValidUserProfile(data) {
+      return data.keys().hasAll(['uid', 'username', 'role', 'status', 'bio', 'avatarColor', 'createdAt', 'updatedAt']) &&
+        data.keys().hasOnly(['uid', 'username', 'role', 'status', 'bio', 'avatarColor', 'createdAt', 'updatedAt']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.username is string && data.username.size() >= 2 && data.username.size() <= 40 &&
+        data.role is string && data.role.size() <= 20 && data.role in ['member', 'vip', 'moderator', 'admin'] &&
+        data.status is string && data.status.size() <= 16 && data.status in ['online', 'idle', 'offline'] &&
+        data.bio is string && data.bio.size() <= 160 &&
+        data.avatarColor is string && data.avatarColor.size() >= 1 && data.avatarColor.size() <= 32 &&
+        data.createdAt is timestamp &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidUserPrivate(data) {
+      return data.keys().hasAll(['uid', 'email', 'createdAt']) &&
+        data.keys().hasOnly(['uid', 'email', 'createdAt']) &&
+        data.uid is string && data.uid.size() >= 1 && data.uid.size() <= 128 && data.uid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.email is string && data.email.size() >= 3 && data.email.size() <= 254 &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidTickerSlot(data) {
+      return data.keys().hasAll(['slotIndex', 'text', 'publisherUid', 'publisherUsername', 'publisherRole', 'category', 'updatedAt']) &&
+        data.keys().hasOnly(['slotIndex', 'text', 'publisherUid', 'publisherUsername', 'publisherRole', 'category', 'updatedAt']) &&
+        data.slotIndex is int && data.slotIndex >= 1 && data.slotIndex <= 7 &&
+        data.text is string && data.text.size() >= 1 && data.text.size() <= 180 &&
+        data.publisherUid is string && data.publisherUid.size() >= 1 && data.publisherUid.size() <= 128 && data.publisherUid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.publisherUsername is string && data.publisherUsername.size() >= 2 && data.publisherUsername.size() <= 40 &&
+        data.publisherRole is string && data.publisherRole.size() <= 20 && data.publisherRole in ['vip', 'moderator', 'admin'] &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 32 &&
+        data.updatedAt is timestamp;
+    }
+
+    function isValidChatRoom(data) {
+      return data.keys().hasAll(['roomId', 'name', 'topic', 'category', 'createdBy', 'createdAt']) &&
+        data.keys().hasOnly(['roomId', 'name', 'topic', 'category', 'createdBy', 'createdAt']) &&
+        data.roomId is string && data.roomId.size() >= 1 && data.roomId.size() <= 128 && data.roomId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.name is string && data.name.size() >= 2 && data.name.size() <= 60 &&
+        data.topic is string && data.topic.size() <= 200 &&
+        data.category is string && data.category.size() >= 1 && data.category.size() <= 40 &&
+        data.createdBy is string && data.createdBy.size() >= 1 && data.createdBy.size() <= 128 && data.createdBy.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidRoomMessage(data) {
+      return data.keys().hasAll(['roomId', 'authorUid', 'authorUsername', 'authorRole', 'text', 'isPublic', 'createdAt']) &&
+        data.keys().hasOnly(['roomId', 'authorUid', 'authorUsername', 'authorRole', 'text', 'isPublic', 'createdAt']) &&
+        data.roomId is string && data.roomId.size() >= 1 && data.roomId.size() <= 128 && data.roomId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.authorUid is string && data.authorUid.size() >= 1 && data.authorUid.size() <= 128 && data.authorUid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.authorUsername is string && data.authorUsername.size() >= 2 && data.authorUsername.size() <= 40 &&
+        data.authorRole is string && data.authorRole.size() <= 20 && data.authorRole in ['member', 'vip', 'moderator', 'admin'] &&
+        data.text is string && data.text.size() >= 1 && data.text.size() <= 1000 &&
+        data.isPublic is bool && data.isPublic == true &&
+        data.createdAt is timestamp;
+    }
+
+    function isValidBubbleMessage(data) {
+      return data.keys().hasAll(['channelId', 'authorUid', 'authorUsername', 'authorRole', 'text', 'isPublic', 'createdAt']) &&
+        data.keys().hasOnly(['channelId', 'authorUid', 'authorUsername', 'authorRole', 'text', 'isPublic', 'createdAt']) &&
+        data.channelId is string && data.channelId.size() >= 1 && data.channelId.size() <= 64 && data.channelId.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.authorUid is string && data.authorUid.size() >= 1 && data.authorUid.size() <= 128 && data.authorUid.matches('^[a-zA-Z0-9_\\-]+$') &&
+        data.authorUsername is string && data.authorUsername.size() >= 2 && data.authorUsername.size() <= 40 &&
+        data.authorRole is string && data.authorRole.size() <= 20 && data.authorRole in ['member', 'vip', 'moderator', 'admin'] &&
+        data.text is string && data.text.size() >= 1 && data.text.size() <= 400 &&
+        data.isPublic is bool && data.isPublic == true &&
+        data.createdAt is timestamp;
+    }
+
+    // Collection 1: Public User Profiles (/users/{userId})
+    match /users/{userId} {
+      allow get: if isValidId(userId) && existing().status in ['online', 'idle', 'offline'];
+      allow list: if existing().status in ['online', 'idle', 'offline'];
+
+      allow create: if isVerifiedUser() &&
+        isValidId(userId) &&
+        userId == request.auth.uid &&
+        isValidUserProfile(incoming()) &&
+        incoming().uid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        incoming().updatedAt == request.time &&
+        (incoming().role in ['member', 'vip'] || isBootstrappedAdmin());
+
+      allow update: if isVerifiedUser() &&
+        isValidId(userId) &&
+        isValidUserProfile(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt &&
+        incoming().updatedAt == request.time && (
+          // Action 1: Owner updates profile or toggles member/vip role for community demo
+          (userId == request.auth.uid &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['username', 'status', 'bio', 'avatarColor', 'role', 'updatedAt']) &&
+            (incoming().role == existing().role || incoming().role in ['member', 'vip'] || isBootstrappedAdmin())) ||
+          // Action 2: Admin manages role or profile
+          (isAdmin() &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['username', 'status', 'bio', 'avatarColor', 'role', 'updatedAt']))
+        );
+
+      allow delete: if isVerifiedUser() && isValidId(userId) && isAdmin();
+    }
+
+    // Collection 2: Isolated Private PII (/users_private/{userId})
+    match /users_private/{userId} {
+      allow get: if isVerifiedUser() && isValidId(userId) && (userId == request.auth.uid || isAdmin());
+      allow list: if isVerifiedUser() && existing().uid == request.auth.uid;
+
+      allow create: if isVerifiedUser() &&
+        isValidId(userId) &&
+        userId == request.auth.uid &&
+        isValidUserPrivate(incoming()) &&
+        incoming().uid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid));
+
+      allow update: if isVerifiedUser() &&
+        isValidId(userId) &&
+        isValidUserPrivate(incoming()) &&
+        incoming().uid == existing().uid &&
+        incoming().createdAt == existing().createdAt && (
+          (userId == request.auth.uid && incoming().diff(existing()).affectedKeys().hasOnly(['email'])) ||
+          (isAdmin() && incoming().diff(existing()).affectedKeys().hasOnly(['email']))
+        );
+
+      allow delete: if isVerifiedUser() && isValidId(userId) && (userId == request.auth.uid || isAdmin());
+    }
+
+    // Collection 3: Global 7-Slot Ticker (/ticker_slots/{slotId})
+    match /ticker_slots/{slotId} {
+      allow get: if isValidTickerSlotId(slotId) && existing().slotIndex >= 1 && existing().slotIndex <= 7;
+      allow list: if existing().slotIndex >= 1 && existing().slotIndex <= 7;
+
+      allow create: if isVerifiedUser() &&
+        isValidTickerSlotId(slotId) &&
+        isValidTickerSlot(incoming()) &&
+        incoming().publisherUid == request.auth.uid &&
+        incoming().updatedAt == request.time &&
+        canPublishTicker();
+
+      allow update: if isVerifiedUser() &&
+        isValidTickerSlotId(slotId) &&
+        isValidTickerSlot(incoming()) &&
+        incoming().slotIndex == existing().slotIndex &&
+        incoming().publisherUid == request.auth.uid &&
+        incoming().updatedAt == request.time && (
+          (canPublishTicker() &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['text', 'publisherUid', 'publisherUsername', 'publisherRole', 'category', 'updatedAt'])) ||
+          (isAdmin() &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['text', 'publisherUid', 'publisherUsername', 'publisherRole', 'category', 'updatedAt']))
+        );
+
+      allow delete: if isVerifiedUser() && isValidTickerSlotId(slotId) && isAdmin();
+    }
+
+    // Collection 4: Public Chat Rooms (/rooms/{roomId})
+    match /rooms/{roomId} {
+      allow get: if isValidId(roomId) && existing().roomId == roomId;
+      allow list: if existing().category in ['General', 'Technology', 'Design', 'Voice & Music', 'Global Lounge', 'Community'];
+
+      allow create: if isVerifiedUser() &&
+        isValidId(roomId) &&
+        isValidChatRoom(incoming()) &&
+        incoming().roomId == roomId &&
+        incoming().createdBy == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid));
+
+      allow update: if isVerifiedUser() &&
+        isValidId(roomId) &&
+        isValidChatRoom(incoming()) &&
+        incoming().roomId == existing().roomId &&
+        incoming().createdBy == existing().createdBy &&
+        incoming().createdAt == existing().createdAt && (
+          (existing().createdBy == request.auth.uid &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['name', 'topic', 'category'])) ||
+          (isAdmin() &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['name', 'topic', 'category']))
+        );
+
+      allow delete: if isVerifiedUser() && isValidId(roomId) && isAdmin();
+
+      // Subcollection 5: Room Messages (/rooms/{roomId}/messages/{messageId})
+      match /messages/{messageId} {
+        allow get: if isValidId(roomId) && isValidId(messageId) && existing().isPublic == true;
+        allow list: if existing().isPublic == true;
+
+        allow create: if isVerifiedUser() &&
+          isValidId(roomId) &&
+          isValidId(messageId) &&
+          isValidRoomMessage(incoming()) &&
+          incoming().roomId == roomId &&
+          incoming().authorUid == request.auth.uid &&
+          incoming().createdAt == request.time &&
+          exists(/databases/$(database)/documents/rooms/$(roomId)) &&
+          exists(/databases/$(database)/documents/users/$(request.auth.uid));
+
+        allow update: if isVerifiedUser() &&
+          isValidId(roomId) &&
+          isValidId(messageId) &&
+          isValidRoomMessage(incoming()) &&
+          incoming().roomId == existing().roomId &&
+          incoming().authorUid == existing().authorUid &&
+          incoming().createdAt == existing().createdAt &&
+          exists(/databases/$(database)/documents/rooms/$(roomId)) && (
+            (existing().authorUid == request.auth.uid &&
+              incoming().diff(existing()).affectedKeys().hasOnly(['text'])) ||
+            (isAdmin() &&
+              incoming().diff(existing()).affectedKeys().hasOnly(['text']))
+          );
+
+        allow delete: if isVerifiedUser() &&
+          isValidId(roomId) &&
+          isValidId(messageId) &&
+          exists(/databases/$(database)/documents/rooms/$(roomId)) &&
+          (existing().authorUid == request.auth.uid || isAdmin());
+      }
+    }
+
+    // Collection 6: Floating Chat Bubble Messages (/bubble_messages/{messageId})
+    match /bubble_messages/{messageId} {
+      allow get: if isValidId(messageId) && existing().isPublic == true;
+      allow list: if existing().isPublic == true;
+
+      allow create: if isVerifiedUser() &&
+        isValidId(messageId) &&
+        isValidBubbleMessage(incoming()) &&
+        incoming().authorUid == request.auth.uid &&
+        incoming().createdAt == request.time &&
+        exists(/databases/$(database)/documents/users/$(request.auth.uid));
+
+      allow update: if isVerifiedUser() &&
+        isValidId(messageId) &&
+        isValidBubbleMessage(incoming()) &&
+        incoming().channelId == existing().channelId &&
+        incoming().authorUid == existing().authorUid &&
+        incoming().createdAt == existing().createdAt && (
+          (existing().authorUid == request.auth.uid &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['text'])) ||
+          (isAdmin() &&
+            incoming().diff(existing()).affectedKeys().hasOnly(['text']))
+        );
+
+      allow delete: if isVerifiedUser() &&
+        isValidId(messageId) &&
+        (existing().authorUid == request.auth.uid || isAdmin());
+    }
+  }
+}

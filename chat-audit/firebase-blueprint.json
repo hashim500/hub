@@ -1,0 +1,288 @@
+{
+  "entities": {
+    "UserProfile": {
+      "title": "UserProfile",
+      "description": "Public profile for an Agora Global community member.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Firebase Auth UID of the user.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "username": {
+          "type": "string",
+          "description": "Display handle of the user.",
+          "minLength": 2,
+          "maxLength": 40
+        },
+        "role": {
+          "type": "string",
+          "description": "Community role of the user (member, vip, moderator, admin).",
+          "enum": ["member", "vip", "moderator", "admin"],
+          "maxLength": 20
+        },
+        "status": {
+          "type": "string",
+          "description": "Presence state of the user.",
+          "enum": ["online", "idle", "offline"],
+          "maxLength": 16
+        },
+        "bio": {
+          "type": "string",
+          "description": "Short biography or status tagline.",
+          "maxLength": 160
+        },
+        "avatarColor": {
+          "type": "string",
+          "description": "Hex or Tailwind color token for avatar.",
+          "maxLength": 32
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of account creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last profile update."
+        }
+      },
+      "required": ["uid", "username", "role", "status", "bio", "avatarColor", "createdAt", "updatedAt"]
+    },
+    "UserPrivate": {
+      "title": "UserPrivate",
+      "description": "Isolated PII document storing the user's private email address.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "description": "Owner Firebase Auth UID.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "email": {
+          "type": "string",
+          "format": "email",
+          "description": "Private email address.",
+          "maxLength": 254
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Creation timestamp."
+        }
+      },
+      "required": ["uid", "email", "createdAt"]
+    },
+    "TickerSlot": {
+      "title": "TickerSlot",
+      "description": "One of the 7 global announcement ticker slots at the top of the homepage.",
+      "type": "object",
+      "properties": {
+        "slotIndex": {
+          "type": "number",
+          "description": "Slot number from 1 to 7."
+        },
+        "text": {
+          "type": "string",
+          "description": "Scrolling announcement text.",
+          "minLength": 1,
+          "maxLength": 180
+        },
+        "publisherUid": {
+          "type": "string",
+          "description": "UID of the VIP, Moderator, or Admin who published this slot.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "publisherUsername": {
+          "type": "string",
+          "description": "Username of the publisher displayed alongside the scrolling text.",
+          "minLength": 2,
+          "maxLength": 40
+        },
+        "publisherRole": {
+          "type": "string",
+          "description": "Role of the publisher at time of publishing.",
+          "enum": ["vip", "moderator", "admin"],
+          "maxLength": 20
+        },
+        "category": {
+          "type": "string",
+          "description": "Topic category for the announcement.",
+          "maxLength": 32
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the slot was updated."
+        }
+      },
+      "required": ["slotIndex", "text", "publisherUid", "publisherUsername", "publisherRole", "category", "updatedAt"]
+    },
+    "ChatRoom": {
+      "title": "ChatRoom",
+      "description": "Public text chat room metadata.",
+      "type": "object",
+      "properties": {
+        "roomId": {
+          "type": "string",
+          "description": "Unique room identifier.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "name": {
+          "type": "string",
+          "description": "Display name of the room.",
+          "minLength": 2,
+          "maxLength": 60
+        },
+        "topic": {
+          "type": "string",
+          "description": "Current room topic and guidelines.",
+          "maxLength": 200
+        },
+        "category": {
+          "type": "string",
+          "description": "Room category label.",
+          "maxLength": 40
+        },
+        "createdBy": {
+          "type": "string",
+          "description": "UID of room creator.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Room creation timestamp."
+        }
+      },
+      "required": ["roomId", "name", "topic", "category", "createdBy", "createdAt"]
+    },
+    "RoomMessage": {
+      "title": "RoomMessage",
+      "description": "Real-time text message inside a public group chat room.",
+      "type": "object",
+      "properties": {
+        "roomId": {
+          "type": "string",
+          "description": "Parent room ID.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorUid": {
+          "type": "string",
+          "description": "Sender UID.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorUsername": {
+          "type": "string",
+          "description": "Sender display handle.",
+          "minLength": 2,
+          "maxLength": 40
+        },
+        "authorRole": {
+          "type": "string",
+          "description": "Sender role.",
+          "enum": ["member", "vip", "moderator", "admin"],
+          "maxLength": 20
+        },
+        "text": {
+          "type": "string",
+          "description": "Message body.",
+          "minLength": 1,
+          "maxLength": 1000
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "Explicitly marks the message as visible in public room queries."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of message creation."
+        }
+      },
+      "required": ["roomId", "authorUid", "authorUsername", "authorRole", "text", "isPublic", "createdAt"]
+    },
+    "BubbleMessage": {
+      "title": "BubbleMessage",
+      "description": "Quick message posted in the floating Chat Bubble widget.",
+      "type": "object",
+      "properties": {
+        "channelId": {
+          "type": "string",
+          "description": "Bubble channel identifier (e.g. pulse, help, lounge).",
+          "maxLength": 64,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorUid": {
+          "type": "string",
+          "description": "Sender UID.",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$"
+        },
+        "authorUsername": {
+          "type": "string",
+          "description": "Sender display handle.",
+          "minLength": 2,
+          "maxLength": 40
+        },
+        "authorRole": {
+          "type": "string",
+          "description": "Sender role.",
+          "enum": ["member", "vip", "moderator", "admin"],
+          "maxLength": 20
+        },
+        "text": {
+          "type": "string",
+          "description": "Quick bubble message content.",
+          "minLength": 1,
+          "maxLength": 400
+        },
+        "isPublic": {
+          "type": "boolean",
+          "description": "True for public widget messages."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp."
+        }
+      },
+      "required": ["channelId", "authorUid", "authorUsername", "authorRole", "text", "isPublic", "createdAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserProfile" },
+      "description": "Public user profiles without PII."
+    },
+    "/users_private/{userId}": {
+      "schema": { "$ref": "#/entities/UserPrivate" },
+      "description": "Strict owner-only private PII storage."
+    },
+    "/ticker_slots/{slotId}": {
+      "schema": { "$ref": "#/entities/TickerSlot" },
+      "description": "The 7 global scrolling announcement bar slots."
+    },
+    "/rooms/{roomId}": {
+      "schema": { "$ref": "#/entities/ChatRoom" },
+      "description": "Public text chat rooms."
+    },
+    "/rooms/{roomId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/RoomMessage" },
+      "description": "Real-time messages inside a specific public chat room."
+    },
+    "/bubble_messages/{messageId}": {
+      "schema": { "$ref": "#/entities/BubbleMessage" },
+      "description": "Global floating chat bubble quick messages."
+    }
+  }
+}

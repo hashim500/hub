@@ -1,0 +1,6 @@
+{
+  "name": "Agora Global",
+  "description": "A modern real-time global community platform featuring a 7-slot VIP live announcement ticker, floating chat bubbles, multi-channel text rooms, and WebRTC voice lounges.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}

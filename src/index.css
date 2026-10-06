@@ -1,0 +1,147 @@
+@import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-display: 'Cairo', 'Syne', sans-serif;
+    --font-sans: 'Cairo', 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+    --font-mono: 'JetBrains Mono', monospace;
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  html,
+  body,
+  #root {
+    height: 100%;
+    width: 100%;
+    overflow: hidden;
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  h1,
+  h2,
+  .font-display {
+    font-family: var(--font-display);
+    text-wrap: balance;
+  }
+
+  .font-mono-tabular {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+  }
+}
+
+/* Custom sleek scrollbars */
+::-webkit-scrollbar {
+  width: 5px;
+  height: 5px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(148, 163, 184, 0.25);
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(148, 163, 184, 0.45);
+}
+
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Luxury Telegram Chat Wallpaper Pattern */
+.tg-chat-bg-dark {
+  background-color: #0b141a;
+  background-image: radial-gradient(rgba(56, 189, 248, 0.06) 1px, transparent 0),
+    radial-gradient(rgba(16, 185, 129, 0.05) 1px, transparent 0);
+  background-size: 28px 28px;
+  background-position: 0 0, 14px 14px;
+}
+
+.tg-chat-bg-light {
+  background-color: #efeae2;
+  background-image: radial-gradient(rgba(15, 23, 42, 0.05) 1px, transparent 0),
+    radial-gradient(rgba(37, 99, 235, 0.04) 1px, transparent 0);
+  background-size: 28px 28px;
+  background-position: 0 0, 14px 14px;
+}
+
+/* Speaking Shake / Pulse Animation for Voice Room Participants */
+@keyframes speaking-shake {
+  0%, 100% {
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+  20% {
+    transform: translate3d(-2px, -1px, 0) scale(1.04) rotate(-1.5deg);
+  }
+  40% {
+    transform: translate3d(2px, 1px, 0) scale(1.06) rotate(1.5deg);
+  }
+  60% {
+    transform: translate3d(-2px, 1px, 0) scale(1.05) rotate(-1deg);
+  }
+  80% {
+    transform: translate3d(2px, -1px, 0) scale(1.03) rotate(1deg);
+  }
+}
+
+.animate-speaking-shake {
+  animation: speaking-shake 0.55s ease-in-out infinite;
+}
+
+@keyframes agora-marquee-ltr {
+  0% {
+    transform: translate3d(0%, 0, 0);
+  }
+  100% {
+    transform: translate3d(-50%, 0, 0);
+  }
+}
+
+@keyframes agora-marquee-rtl {
+  0% {
+    transform: translate3d(0%, 0, 0);
+  }
+  100% {
+    transform: translate3d(50%, 0, 0);
+  }
+}
+
+.animate-agora-marquee-ltr {
+  display: flex;
+  width: max-content;
+  animation: agora-marquee-ltr 45s linear infinite;
+}
+
+.animate-agora-marquee-rtl {
+  display: flex;
+  width: max-content;
+  animation: agora-marquee-rtl 45s linear infinite;
+}
+
+.animate-agora-marquee-ltr:hover,
+.animate-agora-marquee-rtl:hover {
+  animation-play-state: paused;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .animate-agora-marquee-ltr,
+  .animate-agora-marquee-rtl,
+  .animate-speaking-shake {
+    animation: none;
+  }
+}
